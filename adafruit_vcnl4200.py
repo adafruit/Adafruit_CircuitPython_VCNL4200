@@ -150,16 +150,20 @@ class Adafruit_VCNL4200:
     als_persistance = RWBits(2, _ALS_CONF, 2)  # ALS persistence bits
     als_low_threshold = UnaryStruct(_ALS_THDL, "<H")
     als_high_threshold = UnaryStruct(_ALS_THDH, "<H")
-    prox_shutdown = RWBit(_PS_CONF12, 0)  # Bit 0: PS_SD (Proximity Sensor Shutdown)
+    prox_active_force = RWBit(_PS_CONF3MS, 3)
+    prox_duty = RWBits(2, _PS_CONF12, 6)
+    prox_hd = RWBit(_PS_CONF12, 11)
     prox_integration_time = RWBits(3, _PS_CONF12, 1)
+    prox_interrupt = RWBits(2, _PS_CONF12, 8)
+    prox_persistence = RWBits(2, _PS_CONF12, 4)
+    prox_shutdown = RWBit(_PS_CONF12, 0)  # Bit 0: PS_SD (Proximity Sensor Shutdown)
     proximity = ROUnaryStruct(_PS_DATA, "<H")
     lux = ROUnaryStruct(_ALS_DATA, "<H")
     white_light = ROUnaryStruct(_WHITE_DATA, "<H")  # 16-bit register for white light data
     _als_int_en = RWBits(1, _ALS_CONF, 1)  # Bit 1: ALS interrupt enable
     _als_int_switch = RWBits(1, _ALS_CONF, 5)  # Bit 5: ALS interrupt channel selection (white/ALS)
-    _proximity_int_en = RWBits(
-        1, _PS_CONF12, 0
-    )  # Bit 0 in proximity config register for proximity interrupt enable
+    _proximity_int_en = RWBits(1, _PS_CONF12, 0)
+    _prox_trigger = RWBit(_PS_CONF3MS, 2)
 
     def __init__(self, i2c: I2C, addr: int = _I2C_ADDRESS) -> None:
         self.i2c_device = I2CDevice(i2c, addr)
@@ -181,8 +185,10 @@ class Adafruit_VCNL4200:
             self.als_low_threshold = 0
             self.als_high_threshold = 0xFFFF
             self.set_interrupt(enabled=False, white_channel=False)
+            self.prox_duty = PS_DUTY["1_160"]
             self.prox_shutdown = False
             self.prox_integration_time = PS_IT["1T"]
+            self.prox_persistence = PS_PERS["1"]
         except Exception as error:
             raise RuntimeError(f"Failed to initialize: {error}") from error
 
@@ -192,6 +198,14 @@ class Adafruit_VCNL4200:
         try:
             self._als_int_en = enabled
             self._als_int_switch = white_channel
+            return True
+        except OSError:
+            return False
+
+    def trigger_prox(self):
+        """Triggers a single proximity measurement manually in active force mode."""
+        try:
+            self._prox_trigger = True
             return True
         except OSError:
             return False
