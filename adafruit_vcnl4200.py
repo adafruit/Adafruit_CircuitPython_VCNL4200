@@ -217,13 +217,13 @@ class Adafruit_VCNL4200:
     def sunlight_cancellation(self) -> bool:
         sunlight_cancel = self._read_register(_PS_CONF3MS, 2)
         print("after read:", sunlight_cancel)
-        return (sunlight_cancel[0] & 0x01) == 1
+        return self.get_bit(sunlight_cancel[0], 0) == 1
 
     @sunlight_cancellation.setter
     def sunlight_cancellation(self, value: bool) -> None:
         sunlight_cancel = self._read_register(_PS_CONF3MS, 2)
         sunlight_cancel = bytearray(sunlight_cancel)
-        sunlight_cancel[0] = sunlight_cancel[0] | 1 if value else 0
+        sunlight_cancel[0] = self.set_bit(sunlight_cancel[0], 0, 1 if value else 0)
         print(f"after change, before write: {sunlight_cancel}")
         self._write_register(_PS_CONF3MS, sunlight_cancel)
 
@@ -241,3 +241,28 @@ class Adafruit_VCNL4200:
             print(f"I2C error: {e}")
             return None
         return result
+
+    @staticmethod
+    def set_bit(num, pos, value):
+        """Sets the bit at position 'pos' in 'num' to 'value' (0 or 1)."""
+
+        if value == 1:
+            # Set the bit to 1
+            return num | (1 << pos)
+        else:
+            # Set the bit to 0
+            return num & ~(1 << pos)
+
+    @staticmethod
+    def get_bit(number, position):
+        """Gets the bit at a specific position in a number.
+
+        Args:
+          number: The integer number.
+          position: The position of the bit (starting from 0 for the least significant bit).
+
+        Returns:
+          The bit at the specified position (0 or 1).
+        """
+
+        return (number >> position) & 1
