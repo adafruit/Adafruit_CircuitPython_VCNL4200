@@ -209,3 +209,30 @@ class Adafruit_VCNL4200:
             return True
         except OSError:
             return False
+
+    @property
+    def sunlight_cancellation(self) -> bool:
+        sunlight_cancel = self._read_register(_PS_CONF3MS, 2)
+        return sunlight_cancel[0] & 0x00 == 1
+
+    @sunlight_cancellation.setter
+    def sunlight_cancellation(self, value: bool) -> None:
+        sunlight_cancel = self._read_register(_PS_CONF3MS, 2)
+        sunlight_cancel = bytearray(sunlight_cancel)
+        sunlight_cancel[0] = (sunlight_cancel[0] & 0xFF) | 1 if value else 0
+        self._write_register(_PS_CONF3MS, sunlight_cancel)
+
+    def _write_register(self, reg, data):
+        with self.i2c_dev:
+            self.i2c_dev.write(bytes([reg]) + data)
+
+    def _read_register(self, reg, length):
+        result = bytearray(length)
+        try:
+            with self.i2c_dev:
+                self.i2c_dev.write(bytes([reg]))
+                self.i2c_dev.readinto(result)
+        except OSError as e:
+            print(f"I2C error: {e}")
+            return None
+        return result
