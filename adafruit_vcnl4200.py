@@ -154,13 +154,15 @@ class Adafruit_VCNL4200:
     prox_duty = RWBits(2, _PS_CONF12, 6)
     prox_hd = RWBit(_PS_CONF12, 11)
     prox_integration_time = RWBits(3, _PS_CONF12, 1)
-    prox_interrupt = RWBits(2, _PS_CONF12, 8)
+    #prox_interrupt = RWBits(2, _PS_CONF12, 8)
     prox_persistence = RWBits(2, _PS_CONF12, 4)
+    #prox_smart_persistence = RWBit( _PS_CONF3MS, 4)
     prox_shutdown = RWBit(_PS_CONF12, 0)  # Bit 0: PS_SD (Proximity Sensor Shutdown)
     proximity = ROUnaryStruct(_PS_DATA, "<H")
     lux = ROUnaryStruct(_ALS_DATA, "<H")
     white_light = ROUnaryStruct(_WHITE_DATA, "<H")  # 16-bit register for white light data
-    sunlight_cancellation = RWBit(_PS_CONF3MS, 0)  # Bit 0: PS_CONF3MS sunlight cancellation enable
+    #sunlight_cancellation = RWBit(_PS_CONF3MS, 0)  # Bit 0: PS_CONF3MS sunlight cancellation enable
+    #sunlight_double_immunity = RWBit(_PS_CONF3MS, 1)  # Bit 1: PS_SC_ADV
     _als_int_en = RWBits(1, _ALS_CONF, 1)  # Bit 1: ALS interrupt enable
     _als_int_switch = RWBits(1, _ALS_CONF, 5)  # Bit 5: ALS interrupt channel selection (white/ALS)
     _proximity_int_en = RWBits(1, _PS_CONF12, 0)
@@ -210,3 +212,32 @@ class Adafruit_VCNL4200:
             return True
         except OSError:
             return False
+
+    @property
+    def sunlight_cancellation(self) -> bool:
+        sunlight_cancel = self._read_register(_PS_CONF3MS, 2)
+        print("after read:", sunlight_cancel)
+        return (sunlight_cancel[0] & 0x01) == 1
+
+    @sunlight_cancellation.setter
+    def sunlight_cancellation(self, value: bool) -> None:
+        sunlight_cancel = self._read_register(_PS_CONF3MS, 2)
+        sunlight_cancel = bytearray(sunlight_cancel)
+        sunlight_cancel[0] = sunlight_cancel[0] | 1 if value else 0
+        print(f"after change, before write: {sunlight_cancel}")
+        self._write_register(_PS_CONF3MS, sunlight_cancel)
+
+    def _write_register(self, reg, data):
+        with self.i2c_device:
+            self.i2c_device.write(bytes([reg]) + data)
+
+    def _read_register(self, reg, length):
+        result = bytearray(length)
+        try:
+            with self.i2c_device:
+                self.i2c_device.write(bytes([reg]))
+                self.i2c_device.readinto(result)
+        except OSError as e:
+            print(f"I2C error: {e}")
+            return None
+        return result
