@@ -160,8 +160,15 @@ class Adafruit_VCNL4200:
     _prox_multi_pulse = RWBits(2, _PS_CONF3MS, 5, register_width=2)
     _prox_interrupt = RWBits(2, _PS_CONF12, 8, register_width=2)
     _prox_duty = RWBits(2, _PS_CONF12, 6, register_width=2)
+    _prox_integration_time = RWBits(3, _PS_CONF12, 1, register_width=2)
+    _prox_persistence = RWBits(2, _PS_CONF12, 4, register_width=2)
     prox_sun_cancellation = RWBit(_PS_CONF3MS, 0, register_width=2)
+    prox_sunlight_double_immunity = RWBit(_PS_CONF3MS, 1, register_width=2)
+    prox_active_force = RWBit(_PS_CONF3MS, 3, register_width=2)
+    prox_smart_persistence = RWBit(_PS_CONF3MS, 4, register_width=2)
     white_light = ROUnaryStruct(_WHITE_DATA, "<H")  # 16-bit register for white light data
+    _als_int_time = RWBits(2, _ALS_CONF, 6, register_width=2)
+    _als_persistence = RWBits(2, _ALS_CONF, 2, register_width=2)
     _als_int_en = RWBits(1, _ALS_CONF, 1)  # Bit 1: ALS interrupt enable
     _als_int_switch = RWBits(1, _ALS_CONF, 5)  # Bit 5: ALS interrupt channel selection (white/ALS)
     _proximity_int_en = RWBits(1, _PS_CONF12, 0)
@@ -264,117 +271,34 @@ class Adafruit_VCNL4200:
             raise ValueError(f"Invalid proximity duty cycle setting: {setting}")
         self._prox_duty = setting
 
-
-    @property
-    def prox_sunlight_double_immunity(self):
-        """Get the current state of double sunlight immunity for the proximity sensor (PS)."""
-        # Read the PS_CONF3MS register (2 bytes)
-        buffer = self._read_register(_PS_CONF3MS, 2)
-        # Check if the double sunlight immunity enable bit is set
-        return bool(buffer[0] & self._PROX_SUNLIGHT_DOUBLE_IMMUNITY_MASK)
-
-    @prox_sunlight_double_immunity.setter
-    def prox_sunlight_double_immunity(self, enable):
-        """Enable or disable double sunlight immunity for the proximity sensor (PS)."""
-        # Read the current register value
-        buffer = self._read_register(_PS_CONF3MS, 2)
-        # Update the bit based on the enable parameter
-        if enable:
-            buffer[0] |= self._PROX_SUNLIGHT_DOUBLE_IMMUNITY_MASK  # Set the bit
-        else:
-            buffer[0] &= ~self._PROX_SUNLIGHT_DOUBLE_IMMUNITY_MASK  # Clear the bit
-        # Write the updated value back to the register
-        self._write_register(_PS_CONF3MS, buffer)
-
-    @property
-    def prox_active_force(self):
-        """Get the current state of active force mode for the proximity sensor (PS)."""
-        # Read the PS_CONF3MS register (2 bytes)
-        buffer = self._read_register(_PS_CONF3MS, 2)
-        # Check if the active force mode enable bit is set
-        return bool(buffer[0] & self._PROX_ACTIVE_FORCE_MASK)
-
-    @prox_active_force.setter
-    def prox_active_force(self, enable):
-        """Enable or disable active force mode for the proximity sensor (PS)."""
-        # Read the current register value
-        buffer = self._read_register(_PS_CONF3MS, 2)
-        # Update the bit based on the enable parameter
-        if enable:
-            buffer[0] |= self._PROX_ACTIVE_FORCE_MASK  # Set the bit
-        else:
-            buffer[0] &= ~self._PROX_ACTIVE_FORCE_MASK  # Clear the bit
-        # Write the updated value back to the register
-        self._write_register(_PS_CONF3MS, buffer)
-
-    @property
-    def prox_smart_persistence(self):
-        """Get the current state of smart persistence for the proximity sensor (PS)."""
-        # Read the PS_CONF3MS register (2 bytes)
-        buffer = self._read_register(_PS_CONF3MS, 2)
-        # Check if the smart persistence enable bit is set
-        return bool(buffer[0] & self._PROX_SMART_PERSISTENCE_MASK)
-
-    @prox_smart_persistence.setter
-    def prox_smart_persistence(self, enable):
-        """Enable or disable smart persistence for the proximity sensor (PS)."""
-        # Read the current register value
-        buffer = self._read_register(_PS_CONF3MS, 2)
-        # Update the bit based on the enable parameter
-        if enable:
-            buffer[0] |= self._PROX_SMART_PERSISTENCE_MASK  # Set the bit
-        else:
-            buffer[0] &= ~self._PROX_SMART_PERSISTENCE_MASK  # Clear the bit
-        # Write the updated value back to the register
-        self._write_register(_PS_CONF3MS, buffer)
-
     @property
     def als_integration_time(self):
         """Get the current ALS integration time setting as an integer value."""
         # Reverse lookup dictionary for ALS_IT
         ALS_IT_REVERSE = {value: key for key, value in ALS_IT.items()}
-        # Read ALS_CONF as a 2-byte register
-        buffer = self._read_register(_ALS_CONF, 2)
-        # Extract bits 6–7 (integration time)
-        integration_value = (buffer[0] & self._ALS_INTEGRATION_TIME_MASK) >> 6
         # Map the result to the setting name, defaulting to "Unknown" if unmatched
-        return ALS_IT_REVERSE.get(integration_value, "Unknown")
+        return ALS_IT_REVERSE.get(self._als_int_time, "Unknown")
 
     @als_integration_time.setter
     def als_integration_time(self, it):
         """Set the ALS integration time using a valid integer setting."""
         if it not in ALS_IT.values():
             raise ValueError(f"Invalid ALS integration time setting: {it}")
-
-        # Read current ALS_CONF as a 2-byte register
-        buffer = self._read_register(_ALS_CONF, 2)
-        # Clear bits 6–7, then set the new value
-        buffer[0] = (buffer[0] & ~self._ALS_INTEGRATION_TIME_MASK) | (it << 6)
-        # Write back both bytes to ALS_CONF
-        self._write_register(_ALS_CONF, buffer)
+        self._als_int_time = it
 
     @property
     def als_persistence(self):
         """Get the current ALS persistence setting as a human-readable name."""
         # Reverse lookup dictionary for ALS_PERS
         ALS_PERS_REVERSE = {value: key for key, value in ALS_PERS.items()}
-        # Read ALS_CONF as a 2-byte register
-        buffer = self._read_register(_ALS_CONF, 2)
-        # Extract bits 2–3 and map to persistence level
-        persistence_value = (buffer[0] & self._ALS_PERSISTENCE_MASK) >> 2
-        return ALS_PERS_REVERSE.get(persistence_value, "Unknown")
+        return ALS_PERS_REVERSE.get(self._als_persistence, "Unknown")
 
     @als_persistence.setter
     def als_persistence(self, pers):
         """Set the ALS persistence level using an integer value from ALS_PERS."""
         if pers not in ALS_PERS.values():
             raise ValueError(f"Invalid ALS persistence setting: {pers}")
-        # Read the current 2-byte value of ALS_CONF
-        buffer = self._read_register(_ALS_CONF, 2)
-        # Clear bits 2–3, then set the new persistence value
-        buffer[0] = (buffer[0] & ~self._ALS_PERSISTENCE_MASK) | (pers << 2)
-        # Write the modified 2-byte value back to ALS_CONF
-        self._write_register(_ALS_CONF, buffer)
+        self._als_persistence = pers
 
     @property
     def prox_multi_pulse(self):
@@ -392,45 +316,25 @@ class Adafruit_VCNL4200:
         """Get the current proximity sensor integration time as a setting name."""
         # Reverse lookup dictionary for PS_IT
         PS_IT_REVERSE = {value: key for key, value in PS_IT.items()}
-        # Read PS_CONF12 as a 2-byte register
-        buffer = self._read_register(_PS_CONF12, 2)
-        # Extract bits 1–3 (proximity integration time) and map to setting name
-        it_value = (buffer[0] & self._PROX_INTEGRATION_TIME_MASK) >> 1
-        return PS_IT_REVERSE.get(it_value, "Unknown")
+        return PS_IT_REVERSE.get(self._prox_integration_time, "Unknown")
 
     @prox_integration_time.setter
     def prox_integration_time(self, setting):
         """Set the proximity sensor integration time using a setting name from PS_IT."""
         if setting not in PS_IT.values():
             raise ValueError(f"Invalid proximity integration time setting: {setting}")
-
-        # Read the current 2-byte value of PS_CONF12
-        buffer = self._read_register(_PS_CONF12, 2)
-        # Clear bits 1–3 in the first byte, then set to the new integration time
-        buffer[0] = (buffer[0] & ~self._PROX_INTEGRATION_TIME_MASK) | (setting << 1)
-        # Write the modified 2-byte value back to PS_CONF12
-        self._write_register(_PS_CONF12, buffer)
+        self._prox_integration_time = setting
 
     @property
     def prox_persistence(self):
         """Get the current proximity sensor persistence setting as a setting name."""
         # Reverse lookup dictionary for PS_PERS
         PS_PERS_REVERSE = {value: key for key, value in PS_PERS.items()}
-        # Read PS_CONF12 as a 2-byte register
-        buffer = self._read_register(_PS_CONF12, 2)
-        # Extract bits 4–5 (proximity persistence) and map to setting name
-        pers_value = (buffer[0] & self._PROX_PERSISTENCE_MASK) >> 4
-        return PS_PERS_REVERSE.get(pers_value, "Unknown")
+        return PS_PERS_REVERSE.get(self._prox_persistence, "Unknown")
 
     @prox_persistence.setter
     def prox_persistence(self, setting):
         """Set the proximity sensor persistence level using a setting name from PS_PERS."""
         if setting not in PS_PERS.values():
             raise ValueError(f"Invalid proximity persistence setting: {setting}")
-
-        # Read the current 2-byte value of PS_CONF12
-        buffer = self._read_register(_PS_CONF12, 2)
-        # Clear bits 4–5 in the first byte, then set to the new persistence level
-        buffer[0] = (buffer[0] & ~self._PROX_PERSISTENCE_MASK) | (setting << 4)
-        # Write the modified 2-byte value back to PS_CONF12
-        self._write_register(_PS_CONF12, buffer)
+        self._prox_persistence = setting
