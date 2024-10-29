@@ -166,6 +166,7 @@ class Adafruit_VCNL4200:
     prox_sunlight_double_immunity = RWBit(_PS_CONF3MS, 1, register_width=2)
     prox_active_force = RWBit(_PS_CONF3MS, 3, register_width=2)
     prox_smart_persistence = RWBit(_PS_CONF3MS, 4, register_width=2)
+    _prox_led_current = RWBits(3, _PS_CONF3MS, 8, register_width=2)
     white_light = ROUnaryStruct(_WHITE_DATA, "<H")  # 16-bit register for white light data
     _als_int_time = RWBits(2, _ALS_CONF, 6, register_width=2)
     _als_persistence = RWBits(2, _ALS_CONF, 2, register_width=2)
@@ -209,6 +210,7 @@ class Adafruit_VCNL4200:
             self.prox_shutdown = False
             self.prox_integration_time = PS_IT["1T"]
             self.prox_persistence = PS_PERS["1"]
+            self.prox_led_current = LED_I['50MA']
         except Exception as error:
             raise RuntimeError(f"Failed to initialize: {error}") from error
 
@@ -338,3 +340,17 @@ class Adafruit_VCNL4200:
         if setting not in PS_PERS.values():
             raise ValueError(f"Invalid proximity persistence setting: {setting}")
         self._prox_persistence = setting
+
+    @property
+    def prox_led_current(self):
+        """Get the current IR LED current setting as a setting name."""
+        # Reverse lookup dictionary for PS_PERS
+        LED_I_REVERSE = {value: key for key, value in LED_I.items()}
+        return LED_I_REVERSE.get(self._prox_led_current, "Unknown")
+
+    @prox_led_current.setter
+    def prox_led_current(self, setting):
+        """Set the proximity sensor IR LED current using a setting name from PS_PERS."""
+        if setting not in LED_I.values():
+            raise ValueError(f"Invalid proximity IR LED current setting: {setting}")
+        self._prox_led_current = setting

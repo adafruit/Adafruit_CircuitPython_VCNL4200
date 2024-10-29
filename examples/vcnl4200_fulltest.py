@@ -8,7 +8,7 @@ import time
 import board
 import busio
 
-from adafruit_vcnl4200 import PS_INT, Adafruit_VCNL4200
+from adafruit_vcnl4200 import PS_INT, Adafruit_VCNL4200, LED_I
 
 # Initialize I2C and the VCNL4200 sensor
 i2c = board.I2C()
@@ -29,7 +29,8 @@ sensor.prox_active_force = False
 print(f"Proximity Active Force: {sensor.prox_active_force}")
 sensor.prox_smart_persistence = False
 print(f"Proximity Smart Persistence: {sensor.prox_smart_persistence}")
-
+sensor.prox_led_current = LED_I['75MA']
+print(f"Proximity IR LED Current: {sensor.prox_led_current}")
 print(f"Proximity is: {sensor.proximity}")
 print(f"Ambient is: {sensor.lux}")
 
