@@ -168,7 +168,7 @@ class Adafruit_VCNL4200:
     prox_smart_persistence = RWBit(_PS_CONF3MS, 4, register_width=2)
     sun_protect_polarity = RWBit(_PS_CONF3MS, 3 + 8, register_width=2)
     prox_boost_typical_sunlight_capability = RWBit(_PS_CONF3MS, 4 + 8, register_width=2)
-    prox_interrupt_logic_mode = RWBit(_PS_CONF3MS, 5 + 8, register_width=2)
+    prox_interrupt_logic_mode = RWBit(_PS_CONF3MS, 7 + 8, register_width=2)
     prox_cancellation_level = UnaryStruct(
         _PS_CANC_LVL, "<H"
     )  # 16-bit registor for cancellation level
