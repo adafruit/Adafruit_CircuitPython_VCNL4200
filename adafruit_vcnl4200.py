@@ -157,7 +157,7 @@ class Adafruit_VCNL4200:
     prox_shutdown = RWBit(_PS_CONF12, 0)  # Bit 0: PS_SD (Proximity Sensor Shutdown)
     proximity = ROUnaryStruct(_PS_DATA, "<H")
     lux = ROUnaryStruct(_ALS_DATA, "<H")
-    prox_multi_pulse = RWBits(2, _PS_CONF3MS, 5, register_width=2)
+    _prox_multi_pulse = RWBits(2, _PS_CONF3MS, 5, register_width=2)
     prox_sun_cancellation = RWBit(_PS_CONF3MS, 0, register_width=2)
     white_light = ROUnaryStruct(_WHITE_DATA, "<H")  # 16-bit register for white light data
     _als_int_en = RWBits(1, _ALS_CONF, 1)  # Bit 1: ALS interrupt enable
@@ -276,27 +276,6 @@ class Adafruit_VCNL4200:
         # Write the modified 2-byte value back to PS_CONF12
         self._write_register(_PS_CONF12, buffer)
 
-    # @property
-    # def prox_sun_cancellation(self):
-    #     """Sunlight cancellation for the proximity sensor."""
-    #     # Read the PS_CONF3MS register (2 bytes)
-    #     buffer = self._read_register(_PS_CONF3MS, 2)
-    #     print(f"{buffer[0]:08b}")
-    #     # Check if the sunlight cancellation enable bit is set
-    #     return bool(buffer[0] & self._PROX_SUN_CANCEL_MASK)
-    #
-    # @prox_sun_cancellation.setter
-    # def prox_sun_cancellation(self, enable):
-    #     # Read the current register value
-    #     buffer = self._read_register(_PS_CONF3MS, 2)
-    #     # Update the bit based on the enable parameter
-    #     if enable:
-    #         buffer[0] |= self._PROX_SUN_CANCEL_MASK  # Set the bit
-    #     else:
-    #         buffer[0] &= ~self._PROX_SUN_CANCEL_MASK  # Clear the bit
-    #     print(f"after update sun cancel {buffer[0]:08b}")
-    #     # Write the updated value back to the register
-    #     self._write_register(_PS_CONF3MS, buffer)
 
     @property
     def prox_sunlight_double_immunity(self):
@@ -409,26 +388,16 @@ class Adafruit_VCNL4200:
         # Write the modified 2-byte value back to ALS_CONF
         self._write_register(_ALS_CONF, buffer)
 
-    # @property
-    # def prox_multi_pulse(self):
-    #     PS_MP_REVERSE = {value: key for key, value in PS_MPS.items()}
-    #     # Read PS_CONF3MS as 2-byte register
-    #     buffer = self._read_register(_PS_CONF3MS, 2)
-    #     print(f"{buffer[0]:08b}")
-    #     # Extract bits 5-6 (proximity multi pulse) and map to setting name
-    #     mp_value = (buffer[0] & self._PROX_MULTIPULSE_MASK) >> 5
-    #     print(f"mp_value: {mp_value}")
-    #     return PS_MP_REVERSE.get(mp_value, "Unknown")
-    #
-    # @prox_multi_pulse.setter
-    # def prox_multi_pulse(self, setting):
-    #     if setting not in PS_MPS.values():
-    #         raise ValueError(f"Invalid PS_MPS setting: {setting}")
-    #     # Read the current 2-byte value of PS_COONF3MS
-    #     buffer = self._read_register(_PS_CONF3MS, 2)
-    #     # Clear bits 5-6 in the first byte, then set the new multi pulse setting
-    #     buffer[0] = (buffer[0] & ~self._PROX_MULTIPULSE_MASK) | (setting << 5)
-    #     self._write_register(_PS_CONF3MS, buffer)
+    @property
+    def prox_multi_pulse(self):
+        PS_MP_REVERSE = {value: key for key, value in PS_MPS.items()}
+        return PS_MP_REVERSE.get(self._prox_multi_pulse, "Unknown")
+
+    @prox_multi_pulse.setter
+    def prox_multi_pulse(self, setting):
+        if setting not in PS_MPS.values():
+            raise ValueError(f"Invalid PS_MPS setting: {setting}")
+        self._prox_multi_pulse = setting
 
     @property
     def prox_integration_time(self):
