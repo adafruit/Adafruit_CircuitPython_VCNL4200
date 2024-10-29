@@ -158,6 +158,7 @@ class Adafruit_VCNL4200:
     proximity = ROUnaryStruct(_PS_DATA, "<H")
     lux = ROUnaryStruct(_ALS_DATA, "<H")
     _prox_multi_pulse = RWBits(2, _PS_CONF3MS, 5, register_width=2)
+    _prox_interrupt = RWBits(2, _PS_CONF12, 8, register_width=2)
     _prox_duty = RWBits(2, _PS_CONF12, 6, register_width=2)
     prox_sun_cancellation = RWBit(_PS_CONF3MS, 0, register_width=2)
     white_light = ROUnaryStruct(_WHITE_DATA, "<H")  # 16-bit register for white light data
@@ -239,19 +240,15 @@ class Adafruit_VCNL4200:
     def prox_interrupt(self):
         """Get the current interrupt mode for the proximity sensor (PS) as a mode name."""
         PS_INT_REVERSE = {value: key for key, value in PS_INT.items()}
-        buffer = self._read_register(_PS_CONF12, 2)
-        mode_value = buffer[1] & self._PROX_INTERRUPT_MASK
         # Return the mode name if available, otherwise return "Unknown"
-        return PS_INT_REVERSE.get(mode_value, "Unknown")
+        return PS_INT_REVERSE.get(self._prox_interrupt, "Unknown")
 
     @prox_interrupt.setter
     def prox_interrupt(self, mode):
         """Set the interrupt mode for the proximity sensor (PS) using PS_INT values."""
         if mode not in PS_INT.values():
             raise ValueError("Invalid interrupt mode")
-        buffer = self._read_register(_PS_CONF12, 2)
-        buffer[1] = (buffer[1] & ~self._PROX_INTERRUPT_MASK) | (mode & self._PROX_INTERRUPT_MASK)
-        self._write_register(_PS_CONF12, buffer)
+        self._prox_interrupt = mode
 
     @property
     def prox_duty(self):
