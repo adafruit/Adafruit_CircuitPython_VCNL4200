@@ -158,6 +158,7 @@ class Adafruit_VCNL4200:
     proximity = ROUnaryStruct(_PS_DATA, "<H")
     lux = ROUnaryStruct(_ALS_DATA, "<H")
     _prox_multi_pulse = RWBits(2, _PS_CONF3MS, 5, register_width=2)
+    _prox_duty = RWBits(2, _PS_CONF12, 6, register_width=2)
     prox_sun_cancellation = RWBit(_PS_CONF3MS, 0, register_width=2)
     white_light = ROUnaryStruct(_WHITE_DATA, "<H")  # 16-bit register for white light data
     _als_int_en = RWBits(1, _ALS_CONF, 1)  # Bit 1: ALS interrupt enable
@@ -257,24 +258,14 @@ class Adafruit_VCNL4200:
         """Get the current proximity sensor duty cycle setting as a setting name."""
         # Reverse lookup dictionary for PS_DUTY
         PS_DUTY_REVERSE = {value: key for key, value in PS_DUTY.items()}
-        # Read PS_CONF12 as a 2-byte register
-        buffer = self._read_register(_PS_CONF12, 2)
-        # Extract bits 6–7 from the first byte and map to setting name
-        duty_value = (buffer[0] & self._PROX_DUTY_MASK) >> 6
-        return PS_DUTY_REVERSE.get(duty_value, "Unknown")
+        return PS_DUTY_REVERSE.get(self._prox_duty, "Unknown")
 
     @prox_duty.setter
     def prox_duty(self, setting):
         """Set the proximity sensor duty cycle using a setting name from PS_DUTY."""
         if setting not in PS_DUTY.values():
             raise ValueError(f"Invalid proximity duty cycle setting: {setting}")
-
-        # Read the current 2-byte value of PS_CONF12
-        buffer = self._read_register(_PS_CONF12, 2)
-        # Clear bits 6–7 in the first byte, then set to the new duty cycle
-        buffer[0] = (buffer[0] & ~self._PROX_DUTY_MASK) | (setting << 6)
-        # Write the modified 2-byte value back to PS_CONF12
-        self._write_register(_PS_CONF12, buffer)
+        self._prox_duty = setting
 
 
     @property
