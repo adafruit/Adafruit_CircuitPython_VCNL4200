@@ -271,9 +271,11 @@ class Adafruit_VCNL4200:
         except Exception as error:
             raise RuntimeError(f"Failed to initialize: {error}") from error
 
-    def als_interrupt(self, enabled, white_channel):
+    def als_interrupt(self, enabled: bool, white_channel: bool) -> bool:
         """Configure ALS interrupt settings, enabling or disabling
-        the interrupt and selecting the interrupt channel."""
+        the interrupt and selecting the interrupt channel.
+
+        :return bool: True if setting the values succeeded, False otherwise."""
         try:
             self._als_int_en = enabled
             self._als_int_switch = white_channel
@@ -281,11 +283,13 @@ class Adafruit_VCNL4200:
         except OSError:
             return False
 
-    def trigger_prox(self):
+    def trigger_prox(self) -> bool:
         """Triggers a single proximity measurement manually in active force mode.
         Initiates a one-time proximity measurement in active force mode. This can be
         used when proximity measurements are not continuous and need to be triggered
-        individually."""
+        individually.
+
+        :return bool: True if triggering succeeded, False otherwise."""
         try:
             self._prox_trigger = True
             return True
@@ -293,55 +297,63 @@ class Adafruit_VCNL4200:
             return False
 
     @property
-    def prox_interrupt(self):
+    def prox_interrupt(self) -> str:
         """Interrupt mode for the proximity sensor
         Configures the interrupt condition for the proximity sensor, which determines
-        when an interrupt will be triggered based on the detected proximity."""
+        when an interrupt will be triggered based on the detected proximity.
+
+        :return str: The interrupt mode for the proximity sensor.
+        """
         PS_INT_REVERSE = {value: key for key, value in PS_INT.items()}
         # Return the mode name if available, otherwise return "Unknown"
         return PS_INT_REVERSE.get(self._prox_interrupt, "Unknown")
 
     @prox_interrupt.setter
-    def prox_interrupt(self, mode):
+    def prox_interrupt(self, mode: int) -> None:
         if mode not in PS_INT.values():
             raise ValueError("Invalid interrupt mode")
         self._prox_interrupt = mode
 
     @property
-    def prox_duty(self):
+    def prox_duty(self) -> str:
         """Proximity sensor duty cycle setting.
         Configures the duty cycle of the infrared emitter for the proximity sensor,
-        which affects power consumption and response time."""
+        which affects power consumption and response time.
+
+        :return str: The duty cycle of the infrared emitter for the proximity sensor."""
         # Reverse lookup dictionary for PS_DUTY
         PS_DUTY_REVERSE = {value: key for key, value in PS_DUTY.items()}
         return PS_DUTY_REVERSE.get(self._prox_duty, "Unknown")
 
     @prox_duty.setter
-    def prox_duty(self, setting):
+    def prox_duty(self, setting: int) -> None:
         if setting not in PS_DUTY.values():
             raise ValueError(f"Invalid proximity duty cycle setting: {setting}")
         self._prox_duty = setting
 
     @property
-    def als_integration_time(self):
+    def als_integration_time(self) -> str:
         """ALS integration time setting. Configures the integration time for
-        the ambient light sensor to control sensitivity and range."""
+        the ambient light sensor to control sensitivity and range.
+
+        :return str: The ALS integration time setting"""
         # Reverse lookup dictionary for ALS_IT
         ALS_IT_REVERSE = {value: key for key, value in ALS_IT.items()}
         # Map the result to the setting name, defaulting to "Unknown" if unmatched
         return ALS_IT_REVERSE.get(self._als_int_time, "Unknown")
 
     @als_integration_time.setter
-    def als_integration_time(self, it):
+    def als_integration_time(self, it: int) -> None:
         if it not in ALS_IT.values():
             raise ValueError(f"Invalid ALS integration time setting: {it}")
         self._als_int_time = it
 
     @property
-    def als_persistence(self):
+    def als_persistence(self) -> str:
         """ALS persistence setting. Configures the persistence level
         of the ALS interrupt, which determines how many consecutive ALS threshold
         triggers are required to activate the interrupt.
+
         :return str: The current persistence setting
         """
         # Reverse lookup dictionary for ALS_PERS
@@ -349,13 +361,13 @@ class Adafruit_VCNL4200:
         return ALS_PERS_REVERSE.get(self._als_persistence, "Unknown")
 
     @als_persistence.setter
-    def als_persistence(self, pers):
+    def als_persistence(self, pers: int) -> None:
         if pers not in ALS_PERS.values():
             raise ValueError(f"Invalid ALS persistence setting: {pers}")
         self._als_persistence = pers
 
     @property
-    def prox_multi_pulse(self):
+    def prox_multi_pulse(self) -> str:
         """Configures the number of infrared pulses used by the proximity sensor in a
         single measurement. Increasing the pulse count can improve accuracy,
         especially in high ambient light conditions.
@@ -366,13 +378,13 @@ class Adafruit_VCNL4200:
         return PS_MP_REVERSE.get(self._prox_multi_pulse, "Unknown")
 
     @prox_multi_pulse.setter
-    def prox_multi_pulse(self, setting):
+    def prox_multi_pulse(self, setting: int) -> None:
         if setting not in PS_MPS.values():
             raise ValueError(f"Invalid PS_MPS setting: {setting}")
         self._prox_multi_pulse = setting
 
     @property
-    def prox_integration_time(self):
+    def prox_integration_time(self) -> str:
         """Proximity sensor integration time. Configures the integration
         time for the proximity sensor, which affects the duration for which the
         sensor is sensitive to reflected light.
@@ -384,13 +396,13 @@ class Adafruit_VCNL4200:
         return PS_IT_REVERSE.get(self._prox_integration_time, "Unknown")
 
     @prox_integration_time.setter
-    def prox_integration_time(self, setting):
+    def prox_integration_time(self, setting: int) -> None:
         if setting not in PS_IT.values():
             raise ValueError(f"Invalid proximity integration time setting: {setting}")
         self._prox_integration_time = setting
 
     @property
-    def prox_persistence(self):
+    def prox_persistence(self) -> str:
         """Proximity sensor persistence setting. Configures the persistence
         level of the proximity sensor interrupt, defining how many consecutive
         threshold triggers are required to activate the interrupt.
@@ -402,13 +414,13 @@ class Adafruit_VCNL4200:
         return PS_PERS_REVERSE.get(self._prox_persistence, "Unknown")
 
     @prox_persistence.setter
-    def prox_persistence(self, setting):
+    def prox_persistence(self, setting: int) -> None:
         if setting not in PS_PERS.values():
             raise ValueError(f"Invalid proximity persistence setting: {setting}")
         self._prox_persistence = setting
 
     @property
-    def prox_led_current(self):
+    def prox_led_current(self) -> str:
         """IR LED current setting. Configures the driving current for the
         infrared LED used in proximity detection, which affects the range
         and power consumption of the sensor.
@@ -419,13 +431,13 @@ class Adafruit_VCNL4200:
         return LED_I_REVERSE.get(self._prox_led_current, "Unknown")
 
     @prox_led_current.setter
-    def prox_led_current(self, setting):
+    def prox_led_current(self, setting: int) -> None:
         if setting not in LED_I.values():
             raise ValueError(f"Invalid proximity IR LED current setting: {setting}")
         self._prox_led_current = setting
 
     @property
-    def interrupt_flags(self):
+    def interrupt_flags(self) -> typing.Dict[str, bool]:
         """The current interrupt flags from the sensor. Retrieves the current
         interrupt status flags, which indicate various sensor states, such as
         threshold crossings or sunlight protection events.
