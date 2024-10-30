@@ -161,11 +161,11 @@ class Adafruit_VCNL4200:
     """Enables or disables the ALS (Ambient Light Sensor) shutdown mode.
     Controls the power state of the ALS, allowing it to be shut down to conserve power.
     Set to true to enable shutdown mode (power off ALS), false to disable (power on ALS)."""
-    als_low_threshold = UnaryStruct(_ALS_THDL, "<H")
+    als_threshold_low = UnaryStruct(_ALS_THDL, "<H")
     """The 16-bit numerical low threshold for the ALS (Ambient Light Sensor) interrupt.
     If the ALS reading falls below this threshold and ALS interrupt is enabled, an interrupt
     will be triggered."""
-    als_high_threshold = UnaryStruct(_ALS_THDH, "<H")
+    als_threshold_high = UnaryStruct(_ALS_THDH, "<H")
     """The 16-bit numerical upper limit for proximity detection.If the proximity reading
     exceeds this threshold and the interrupt is enabled, an interrupt will be triggered."""
     prox_hd = RWBit(_PS_CONF12, 11)
@@ -261,8 +261,8 @@ class Adafruit_VCNL4200:
             self.als_shutdown = False
             self.als_integration_time = ALS_IT["50MS"]
             self.als_persistence = ALS_PERS["1"]
-            self.als_low_threshold = 0
-            self.als_high_threshold = 0xFFFF
+            self.als_threshold_low = 0
+            self.als_threshold_high = 0xFFFF
             self.als_interrupt(enabled=True, white_channel=False)
             self.prox_duty = PS_DUTY["1_160"]
             self.prox_shutdown = False

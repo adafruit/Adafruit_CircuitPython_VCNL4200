@@ -17,8 +17,8 @@ interrupt_pin = digitalio.DigitalInOut(board.D5)
 interrupt_pin.direction = digitalio.Direction.INPUT
 interrupt_pin.pull = digitalio.Pull.UP
 
-sensor.als_low_threshold = 500
-sensor.als_high_threshold = 1000
+sensor.als_threshold_low = 500
+sensor.als_threshold_high = 1000
 sensor.prox_int_threshold_low = 200
 sensor.prox_int_threshold_high = 600
 

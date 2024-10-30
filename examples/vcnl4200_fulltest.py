@@ -17,9 +17,9 @@ print(" '''ALS Settings''' ")
 print(f"Lux Persistence Mode: {sensor.als_persistence}")
 print(f"Lux Integration Mode: {sensor.als_integration_time}")
 print(f"Lux Persistence Mode: {sensor.als_persistence}")
-sensor.als_low_threshold = 0
+sensor.als_threshold_low = 0
 print(f"Lux Low Threshold: {sensor.als_low_threshold}")
-sensor.als_high_threshold = 500
+sensor.als_threshold_high = 500
 print(f"Lux High Threshold: {sensor.als_high_threshold}")
 
 print(" '''Proximity Settings''' ")
