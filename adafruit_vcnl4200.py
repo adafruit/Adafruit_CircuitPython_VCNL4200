@@ -187,38 +187,20 @@ class Adafruit_VCNL4200:
     _als_int_switch = RWBits(1, _ALS_CONF, 5)  # Bit 5: ALS interrupt channel selection (white/ALS)
     _proximity_int_en = RWBits(1, _PS_CONF12, 0)
     _prox_trigger = RWBit(_PS_CONF3MS, 2)
-    _PROX_INTERRUPT_MASK = 0b00000011
-    _PROX_SUN_CANCEL_MASK = 0b00000001  # Bit 0 in PS_CONF3MS register
-    _PROX_SUNLIGHT_DOUBLE_IMMUNITY_MASK = 0b00000010
-    _PROX_ACTIVE_FORCE_MASK = 0b00001000
-    _PROX_SMART_PERSISTENCE_MASK = 0b00010000
-    _ALS_PERSISTENCE_MASK = 0b00001100
-    _ALS_INTEGRATION_TIME_MASK = 0b11000000
-    _PROX_DUTY_MASK = 0b11000000
-    _PROX_INTEGRATION_TIME_MASK = 0b00001110
-    _PROX_PERSISTENCE_MASK = 0b00110000
-    _PROX_MULTIPULSE_MASK = 0b01100000
+    _device_id = UnaryStruct(_ID, "<H")
+    _raw_interrupt_flags = UnaryStruct(_INT_FLAG, "<H")  # 2-byte read, big endian
 
     def __init__(self, i2c: I2C, addr: int = _I2C_ADDRESS) -> None:
         self.i2c_device = I2CDevice(i2c, addr)
-        for _ in range(2):
-            with self.i2c_device as i2c:
-                # Manually read the device ID register (0x0E, 2 bytes)
-                buffer = bytearray(2)
-                i2c.write_then_readinto(bytes([_ID]), buffer)
-                device_id = int.from_bytes(buffer, "little")
-                # Check if it matches expected device ID
-                if device_id == self._DEVICE_ID:
-                    break
-                else:
-                    raise RuntimeError("Device ID mismatch.")
+        if self._device_id != self._DEVICE_ID:
+            raise RuntimeError("Device ID mismatch.")
         try:
             self.als_shutdown = False
             self.als_integration_time = ALS_IT["50MS"]
             self.als_persistence = ALS_PERS["1"]
             self.als_low_threshold = 0
             self.als_high_threshold = 0xFFFF
-            self.set_interrupt(enabled=False, white_channel=False)
+            self.als_interrupt(enabled=True, white_channel=False)
             self.prox_duty = PS_DUTY["1_160"]
             self.prox_shutdown = False
             self.prox_integration_time = PS_IT["1T"]
@@ -226,7 +208,7 @@ class Adafruit_VCNL4200:
         except Exception as error:
             raise RuntimeError(f"Failed to initialize: {error}") from error
 
-    def set_interrupt(self, enabled, white_channel):
+    def als_interrupt(self, enabled, white_channel):
         """Configure ALS interrupt settings, enabling or disabling
         the interrupt and selecting the interrupt channel."""
         try:
@@ -244,50 +226,35 @@ class Adafruit_VCNL4200:
         except OSError:
             return False
 
-    # Internal I2C utility functions
-    def _read_register(self, register, length=1):
-        """Read the specified number of bytes from a register."""
-        with self.i2c_device as i2c:
-            buffer = bytearray(length)
-            i2c.write_then_readinto(bytes([register]), buffer)
-            return buffer
-
-    def _write_register(self, register, data):
-        """Write bytes to the specified register."""
-        with self.i2c_device as i2c:
-            i2c.write(bytes([register]) + data)
-
     @property
     def prox_interrupt(self):
-        """Get the current interrupt mode for the proximity sensor (PS) as a mode name."""
+        """Interrupt mode for the proximity sensor"""
         PS_INT_REVERSE = {value: key for key, value in PS_INT.items()}
         # Return the mode name if available, otherwise return "Unknown"
         return PS_INT_REVERSE.get(self._prox_interrupt, "Unknown")
 
     @prox_interrupt.setter
     def prox_interrupt(self, mode):
-        """Set the interrupt mode for the proximity sensor (PS) using PS_INT values."""
         if mode not in PS_INT.values():
             raise ValueError("Invalid interrupt mode")
         self._prox_interrupt = mode
 
     @property
     def prox_duty(self):
-        """Get the current proximity sensor duty cycle setting as a setting name."""
+        """Proximity sensor duty cycle setting"""
         # Reverse lookup dictionary for PS_DUTY
         PS_DUTY_REVERSE = {value: key for key, value in PS_DUTY.items()}
         return PS_DUTY_REVERSE.get(self._prox_duty, "Unknown")
 
     @prox_duty.setter
     def prox_duty(self, setting):
-        """Set the proximity sensor duty cycle using a setting name from PS_DUTY."""
         if setting not in PS_DUTY.values():
             raise ValueError(f"Invalid proximity duty cycle setting: {setting}")
         self._prox_duty = setting
 
     @property
     def als_integration_time(self):
-        """Get the current ALS integration time setting as an integer value."""
+        """ALS integration time setting"""
         # Reverse lookup dictionary for ALS_IT
         ALS_IT_REVERSE = {value: key for key, value in ALS_IT.items()}
         # Map the result to the setting name, defaulting to "Unknown" if unmatched
@@ -295,21 +262,19 @@ class Adafruit_VCNL4200:
 
     @als_integration_time.setter
     def als_integration_time(self, it):
-        """Set the ALS integration time using a valid integer setting."""
         if it not in ALS_IT.values():
             raise ValueError(f"Invalid ALS integration time setting: {it}")
         self._als_int_time = it
 
     @property
     def als_persistence(self):
-        """Get the current ALS persistence setting as a human-readable name."""
+        """ALS persistence setting"""
         # Reverse lookup dictionary for ALS_PERS
         ALS_PERS_REVERSE = {value: key for key, value in ALS_PERS.items()}
         return ALS_PERS_REVERSE.get(self._als_persistence, "Unknown")
 
     @als_persistence.setter
     def als_persistence(self, pers):
-        """Set the ALS persistence level using an integer value from ALS_PERS."""
         if pers not in ALS_PERS.values():
             raise ValueError(f"Invalid ALS persistence setting: {pers}")
         self._als_persistence = pers
@@ -327,54 +292,54 @@ class Adafruit_VCNL4200:
 
     @property
     def prox_integration_time(self):
-        """Get the current proximity sensor integration time as a setting name."""
+        """Proximity sensor integration time"""
         # Reverse lookup dictionary for PS_IT
         PS_IT_REVERSE = {value: key for key, value in PS_IT.items()}
         return PS_IT_REVERSE.get(self._prox_integration_time, "Unknown")
 
     @prox_integration_time.setter
     def prox_integration_time(self, setting):
-        """Set the proximity sensor integration time using a setting name from PS_IT."""
         if setting not in PS_IT.values():
             raise ValueError(f"Invalid proximity integration time setting: {setting}")
         self._prox_integration_time = setting
 
     @property
     def prox_persistence(self):
-        """Get the current proximity sensor persistence setting as a setting name."""
+        """Proximity sensor persistence setting"""
         # Reverse lookup dictionary for PS_PERS
         PS_PERS_REVERSE = {value: key for key, value in PS_PERS.items()}
         return PS_PERS_REVERSE.get(self._prox_persistence, "Unknown")
 
     @prox_persistence.setter
     def prox_persistence(self, setting):
-        """Set the proximity sensor persistence level using a setting name from PS_PERS."""
         if setting not in PS_PERS.values():
             raise ValueError(f"Invalid proximity persistence setting: {setting}")
         self._prox_persistence = setting
 
     @property
     def prox_led_current(self):
-        """Get the current IR LED current setting as a setting name."""
+        """IR LED current setting"""
         # Reverse lookup dictionary for PS_PERS
         LED_I_REVERSE = {value: key for key, value in LED_I.items()}
         return LED_I_REVERSE.get(self._prox_led_current, "Unknown")
 
     @prox_led_current.setter
     def prox_led_current(self, setting):
-        """Set the proximity sensor IR LED current using a setting name from PS_PERS."""
         if setting not in LED_I.values():
             raise ValueError(f"Invalid proximity IR LED current setting: {setting}")
         self._prox_led_current = setting
 
     @property
     def interrupt_flags(self):
-        raw_value = self._interrupt_flags
+        """Get the current interrupt flags from the sensor."""
+        # Read the full 16-bit register value and isolate the high byte
+        raw_value = (self._raw_interrupt_flags >> 8) & 0xFF
+        # Interpret each flag based on the datasheet's bit definition
         return {
-            "PROX_AWAY": bool(raw_value & _INTFLAG_PROX_AWAY),
-            "PROX_CLOSE": bool(raw_value & _INTFLAG_PROX_CLOSE),
             "ALS_HIGH": bool(raw_value & _INTFLAG_ALS_HIGH),
+            "PROX_CLOSE": bool(raw_value & _INTFLAG_PROX_CLOSE),
             "ALS_LOW": bool(raw_value & _INTFLAG_ALS_LOW),
+            "PROX_AWAY": bool(raw_value & _INTFLAG_PROX_AWAY),
             "PROX_SPFLAG": bool(raw_value & _INTFLAG_PROX_SPFLAG),
             "PROX_UPFLAG": bool(raw_value & _INTFLAG_PROX_UPFLAG),
         }
