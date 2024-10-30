@@ -2,10 +2,13 @@
 #
 # SPDX-License-Identifier: MIT
 """Test interrupts for VCNL4200"""
+
+import time
+
 import board
 import digitalio
-import time
-from adafruit_vcnl4200 import Adafruit_VCNL4200, PS_INT, ALS_PERS, PS_PERS
+
+from adafruit_vcnl4200 import ALS_PERS, PS_INT, PS_PERS, Adafruit_VCNL4200
 
 i2c = board.I2C()
 sensor = Adafruit_VCNL4200(i2c)
@@ -32,7 +35,7 @@ while True:
         print("Interrupt triggered!")
         interrupt_flags = sensor.interrupt_flags
         print("Interrupt flags:", interrupt_flags)
-        
+
         print("Proximity:", sensor.proximity)
         print("Ambient Light:", sensor.lux)
         if interrupt_flags["PROX_AWAY"]:
@@ -46,5 +49,5 @@ while True:
         time.sleep(0.5)
     else:
         print(f"Ambient: {sensor.lux}, Proximity: {sensor.proximity}")
-    
+
     time.sleep(0.1)

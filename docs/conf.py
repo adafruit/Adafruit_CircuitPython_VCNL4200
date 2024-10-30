@@ -28,7 +28,7 @@ extensions = [
 autodoc_mock_imports = ["busio", "adafruit_register", "adafruit_bus_device"]
 
 autodoc_preserve_defaults = True
-
+# autodoc_member_order = "bysource"
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
