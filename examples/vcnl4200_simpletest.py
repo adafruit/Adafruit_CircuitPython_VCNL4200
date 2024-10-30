@@ -10,9 +10,8 @@ import adafruit_vcnl4200
 
 i2c = board.I2C()
 
-# Initialize VCNL4200
 sensor = adafruit_vcnl4200.Adafruit_VCNL4200(i2c)
-print("started")
+
 while True:
     print(f"Proximity is: {sensor.proximity}")
     print(f"Ambient is: {sensor.lux}")
